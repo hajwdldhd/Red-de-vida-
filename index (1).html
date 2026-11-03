@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#173653" />
+  <meta name="description" content="Red de Vida: prototipo académico para encontrar rutas de apoyo personal e institucional en Cali." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Red de Vida" />
+  <title>Red de Vida — demo interactiva con avisos locales</title>
+  <style>
+    :root {
+      --navy: #173653;
+      --navy-2: #244b67;
+      --teal: #287e78;
+      --teal-dark: #1c6762;
+      --mint: #e7f3ef;
+      --sky: #eef5f8;
+      --cream: #fbf8f1;
+      --paper: #ffffff;
+      --ink: #1d3446;
+      --muted: #637584;
+      --line: #dce6e9;
+      --gold: #edc879;
+      --danger: #a84141;
+      --shadow: 0 16px 42px rgba(23, 54, 83, .09);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    button, input, select { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    a { color: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #e2b95d; outline-offset: 3px; }
+    .shell { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    .site-header { padding: 20px 0; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+    .brand-mark { width: 42px; height: 42px; border-radius: 15px; display: grid; place-items: center; color: white; background: var(--navy); box-shadow: 0 7px 18px rgba(23,54,83,.18); }
+    .brand-name { font-weight: 800; color: var(--navy); letter-spacing: -.04em; font-size: 19px; line-height: 1.1; }
+    .brand-sub { color: var(--muted); font-size: 11px; display: block; margin-top: 3px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700; }
+    .nav-links { display: flex; align-items: center; gap: 27px; }
+    .nav-links a { text-decoration: none; color: #516778; font-size: 13px; font-weight: 700; }
+    .nav-links a:hover { color: var(--teal); }
+    .nav-cta { border: 0; background: var(--teal); color: white; padding: 12px 17px; border-radius: 13px; font-weight: 750; font-size: 13px; box-shadow: 0 8px 20px rgba(40,126,120,.17); }
+    .nav-cta:hover, .btn-primary:hover { background: var(--teal-dark); }
+    .prototype-pill { display: inline-flex; gap: 7px; align-items: center; border: 1px solid #d9e7e4; border-radius: 999px; padding: 6px 10px; font-size: 11px; color: var(--teal-dark); background: #f2faf7; font-weight: 800; letter-spacing: .035em; }
+    .dot { width: 6px; height: 6px; background: #56a89a; border-radius: 50%; }
+    .hero { padding: 39px 0 51px; }
+    .hero-grid { display: grid; grid-template-columns: 1.02fr .98fr; gap: 45px; align-items: center; }
+    .hero-copy { padding: 15px 0 10px; }
+    h1 { font-size: clamp(39px, 5vw, 66px); line-height: 1.035; letter-spacing: -.055em; color: var(--navy); margin: 19px 0 18px; max-width: 630px; }
+    h1 span { color: var(--teal); }
+    .hero-copy p { max-width: 525px; color: var(--muted); font-size: 16px; margin: 0 0 25px; line-height: 1.75; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .btn { display: inline-flex; justify-content: center; align-items: center; gap: 9px; border-radius: 14px; padding: 14px 18px; border: 1px solid transparent; text-decoration: none; font-weight: 800; font-size: 14px; transition: transform .15s ease, background .15s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--teal); color: white; box-shadow: 0 10px 24px rgba(40,126,120,.16); }
+    .btn-secondary { background: white; color: var(--navy); border-color: var(--line); }
+    .btn-secondary:hover { background: var(--sky); }
+    .fine-note { font-size: 11px; color: #7d8b95; margin-top: 14px; }
+    .hero-art { position: relative; min-height: 395px; display: grid; place-items: center; }
+    .art-backdrop { position: absolute; inset: 9px 0 5px 15px; border-radius: 34px; background: #eaf2ec; transform: rotate(2.5deg); }
+    .phone-card { position: relative; z-index: 1; background: rgba(255,255,255,.94); border: 1px solid rgba(255,255,255,.8); border-radius: 30px; width: min(375px, 87%); padding: 23px; box-shadow: 0 27px 65px rgba(23,54,83,.16); transform: rotate(-2deg); }
+    .phone-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; color: var(--navy); font-size: 12px; font-weight: 850; }
+    .tiny-logo { width: 27px; height: 27px; border-radius: 9px; background: var(--mint); display: grid; place-items: center; color: var(--teal); }
+    .greeting { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .phone-title { font-size: 27px; font-weight: 850; letter-spacing: -.04em; line-height: 1.1; color: var(--navy); margin-bottom: 10px; }
+    .phone-description { font-size: 12px; color: var(--muted); margin-bottom: 17px; }
+    .mock-support-btn { border: 0; width: 100%; border-radius: 13px; padding: 14px; background: var(--teal); color: white; font-weight: 800; display: flex; gap: 9px; align-items: center; justify-content: center; font-size: 12px; }
+    .phone-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .mini-tile { padding: 12px; border-radius: 13px; background: var(--sky); font-size: 11px; font-weight: 750; color: var(--navy); }
+    .mini-tile span { display: block; margin-bottom: 5px; font-size: 16px; }
+    .float-note { position: absolute; z-index: 2; right: -2px; bottom: 34px; border: 1px solid #e1ebe8; background: white; border-radius: 16px; box-shadow: var(--shadow); padding: 13px 15px; display: flex; align-items: center; gap: 11px; max-width: 210px; }
+    .float-icon { width: 36px; height: 36px; flex: none; border-radius: 12px; background: #fff1d9; color: #90671e; display: grid; place-items: center; }
+    .float-note strong { display: block; font-size: 11px; color: var(--navy); }
+    .float-note small { font-size: 10px; color: var(--muted); }
+    .trust-strip { padding: 16px 0; background: #f1f5f3; border-top: 1px solid #e5ece9; border-bottom: 1px solid #e5ece9; }
+    .trust-inner { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+    .trust-label { font-size: 11px; font-weight: 850; letter-spacing: .08em; color: #6e808a; text-transform: uppercase; }
+    .trust-items { display: flex; gap: 25px; flex-wrap: wrap; }
+    .trust-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--navy); font-weight: 750; }
+    .check { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: #d9eee7; color: var(--teal); font-size: 12px; }
+    section.content-section { padding: 67px 0; }
+    .section-head { display: flex; justify-content: space-between; align-items: end; gap: 25px; margin-bottom: 26px; }
+    .eyebrow { color: var(--teal); font-weight: 850; text-transform: uppercase; letter-spacing: .12em; font-size: 10px; }
+    h2 { font-size: clamp(26px, 3vw, 37px); line-height: 1.13; letter-spacing: -.045em; color: var(--navy); margin: 8px 0 8px; }
+    .section-head p { max-width: 510px; color: var(--muted); font-size: 13px; margin: 0; line-height: 1.7; }
+    .dashboard-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 20px; align-items: stretch; }
+    .panel { border: 1px solid var(--line); background: white; border-radius: var(--radius); padding: 24px; box-shadow: 0 8px 24px rgba(23,54,83,.035); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 19px; }
+    .panel-title { margin: 0; font-size: 17px; letter-spacing: -.025em; color: var(--navy); }
+    .subtle-label { font-size: 10px; color: var(--muted); background: #f3f6f7; border-radius: 99px; padding: 6px 9px; font-weight: 800; }
+    .contact-list { display: grid; gap: 11px; }
+    .contact { display: flex; gap: 12px; align-items: center; border: 1px solid #e7edef; border-radius: 15px; padding: 12px; }
+    .avatar { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: var(--mint); color: var(--teal-dark); font-size: 13px; font-weight: 850; flex: none; }
+    .contact-info { min-width: 0; flex: 1; }
+    .contact-info strong { display: block; font-size: 12px; color: var(--navy); }
+    .contact-info span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .contact-status { width: 7px; height: 7px; border-radius: 50%; background: #71b2a4; flex: none; }
+    .remove-contact { border: 0; background: transparent; color: #81909a; font-size: 17px; line-height: 1; padding: 5px; }
+    .remove-contact:hover { color: var(--danger); }
+    .add-contact-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 13px; }
+    .field { min-width: 0; width: 100%; padding: 11px 12px; border: 1px solid #dce5e8; border-radius: 11px; background: #fbfdfd; color: var(--ink); font-size: 12px; }
+    .btn-small { border: 0; background: var(--navy); color: white; border-radius: 11px; padding: 0 13px; font-size: 12px; font-weight: 800; }
+    .btn-small:hover { background: var(--navy-2); }
+    .microcopy { color: #83929a; font-size: 10px; margin: 11px 0 0; }
+    .request-panel { display: flex; flex-direction: column; background: var(--navy); border-color: var(--navy); color: white; overflow: hidden; position: relative; }
+    .request-panel::after { content: ""; position: absolute; width: 190px; height: 190px; right: -70px; top: -72px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); box-shadow: 0 0 0 23px rgba(255,255,255,.035), 0 0 0 47px rgba(255,255,255,.025); }
+    .request-panel .panel-title { color: white; }
+    .request-panel p { color: #d1dfe6; font-size: 12px; margin: 0 0 20px; line-height: 1.7; max-width: 350px; position: relative; z-index: 1; }
+    .request-panel .panel-head { position: relative; z-index: 1; }
+    .request-big-icon { width: 54px; height: 54px; border-radius: 17px; background: rgba(255,255,255,.12); display: grid; place-items: center; color: #d6eee8; margin-bottom: 19px; position: relative; z-index: 1; }
+    .request-panel .btn { position: relative; z-index: 1; width: 100%; margin-top: auto; }
+    .request-panel .btn-primary { color: var(--navy); background: #f2d48e; box-shadow: none; }
+    .request-panel .btn-primary:hover { background: #f7dea5; }
+    .help-section { background: #f0f5f6; }
+    .help-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 17px; }
+    .help-card { border: 1px solid #dce7e9; background: white; border-radius: 20px; padding: 23px; display: flex; flex-direction: column; min-height: 220px; }
+    .help-icon { width: 45px; height: 45px; border-radius: 14px; background: var(--mint); color: var(--teal-dark); display: grid; place-items: center; margin-bottom: 15px; }
+    .help-icon.emergency { background: #fff0ea; color: #a44d3c; }
+    .help-card h3 { font-size: 17px; color: var(--navy); margin: 0 0 6px; letter-spacing: -.025em; }
+    .help-card p { font-size: 12px; color: var(--muted); margin: 0 0 18px; line-height: 1.7; flex: 1; }
+    .help-card .btn { width: fit-content; padding: 11px 13px; font-size: 12px; }
+    .info-note { margin-top: 18px; padding: 14px 16px; border-radius: 14px; background: #e3edef; color: #526976; font-size: 11px; line-height: 1.65; }
+    .privacy-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: 37px; align-items: start; }
+    .privacy-copy p { color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .privacy-list { display: grid; gap: 12px; }
+    .privacy-item { display: flex; gap: 13px; padding: 16px; background: white; border: 1px solid var(--line); border-radius: 16px; }
+    .privacy-item .check { width: 27px; height: 27px; flex: none; }
+    .privacy-item strong { font-size: 12px; display: block; color: var(--navy); margin-bottom: 3px; }
+    .privacy-item span { font-size: 11px; color: var(--muted); display: block; line-height: 1.6; }
+    .footer { background: var(--navy); color: #d5e2e9; padding: 27px 0 31px; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .footer-brand { color: white; font-weight: 850; font-size: 14px; }
+    .footer p { margin: 5px 0 0; font-size: 10px; color: #a9bfcc; }
+    .footer-note { max-width: 510px; font-size: 10px; color: #a9bfcc; text-align: right; line-height: 1.65; }
+    .modal-backdrop { display: none; position: fixed; inset: 0; padding: 18px; background: rgba(13,31,47,.56); z-index: 30; align-items: center; justify-content: center; }
+    .modal-backdrop.show { display: flex; }
+    .modal { width: min(480px, 100%); background: white; border-radius: 23px; padding: 25px; box-shadow: 0 30px 90px rgba(0,0,0,.25); max-height: 90vh; overflow: auto; animation: rise .18s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(9px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .modal-top { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+    .modal-badge { width: 43px; height: 43px; border-radius: 14px; background: var(--mint); color: var(--teal-dark); display: grid; place-items: center; margin-bottom: 15px; }
+    .modal h3 { margin: 0 0 8px; color: var(--navy); font-size: 22px; letter-spacing: -.04em; line-height: 1.2; }
+    .modal p { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0 0 17px; }
+    .modal-close { border: 0; width: 31px; height: 31px; border-radius: 10px; background: #f0f4f5; color: #607481; font-size: 18px; }
+    .choice-list { display: grid; gap: 9px; margin: 16px 0; }
+    .choice { display: flex; align-items: center; gap: 11px; border: 1px solid #dce6e8; border-radius: 13px; padding: 12px; cursor: pointer; font-size: 12px; color: var(--navy); font-weight: 750; }
+    .choice:has(input:checked) { border-color: var(--teal); background: #f2faf7; }
+    .choice input { accent-color: var(--teal); }
+    .modal-actions { display: flex; gap: 9px; justify-content: end; margin-top: 20px; }
+    .modal-actions .btn { padding: 11px 14px; font-size: 12px; }
+    .simulation-result { display: none; background: #edf8f4; border: 1px solid #c8e7dc; border-radius: 15px; padding: 15px; color: var(--teal-dark); font-size: 12px; line-height: 1.65; margin-top: 16px; }
+    .simulation-result.show { display: block; }
+    .toast { position: fixed; bottom: 22px; left: 50%; transform: translate(-50%, 20px); opacity: 0; background: var(--navy); color: white; z-index: 50; border-radius: 13px; box-shadow: var(--shadow); padding: 13px 17px; font-size: 12px; font-weight: 750; width: max-content; max-width: calc(100% - 30px); transition: all .22s ease; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .urgent-callout { border-left: 3px solid #d9aa4c; padding: 10px 12px; background: #fff8e9; color: #795a25; font-size: 11px; line-height: 1.6; border-radius: 0 10px 10px 0; margin-top: 12px; }
+    @media (max-width: 850px) {
+      .hero-grid { gap: 20px; grid-template-columns: 1fr .85fr; }
+      .hero-art { min-height: 350px; }
+      .phone-card { padding: 18px; }
+      .phone-title { font-size: 23px; }
+      .float-note { right: -8px; }
+      .nav-links { gap: 15px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .request-panel { min-height: 265px; }
+    }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 28px, 500px); }
+      .site-header { padding: 14px 0; }
+      .nav-links { display: none; }
+      .nav-cta { padding: 10px 12px; font-size: 12px; }
+      .brand-mark { width: 39px; height: 39px; }
+      .hero { padding: 30px 0 36px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 9px; }
+      h1 { font-size: 43px; margin-top: 16px; }
+      .hero-copy p { font-size: 14px; }
+      .hero-actions { display: grid; grid-template-columns: 1fr; }
+      .hero-actions .btn { width: 100%; }
+      .hero-art { min-height: 345px; margin: 4px 0 5px; }
+      .phone-card { width: min(335px, 88%); }
+      .float-note { right: 0; bottom: 10px; max-width: 185px; }
+      .trust-inner { align-items: start; flex-direction: column; gap: 12px; }
+      .trust-items { gap: 10px 16px; }
+      section.content-section { padding: 48px 0; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 10px; }
+      .panel { padding: 17px; }
+      .add-contact-form { grid-template-columns: 1fr 1fr; }
+      .add-contact-form .btn-small { grid-column: 1 / -1; padding: 11px; }
+      .help-grid { grid-template-columns: 1fr; }
+      .help-card { min-height: 0; }
+      .privacy-grid { grid-template-columns: 1fr; gap: 16px; }
+      .footer-inner { align-items: start; flex-direction: column; }
+      .footer-note { text-align: left; }
+      .modal { padding: 20px; }
+      .modal-actions { flex-direction: column-reverse; }
+      .modal-actions .btn { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+    .tech-section { background: #fff; }
+    .tech-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:13px; }
+    .tech-card { border:1px solid var(--line); border-radius:16px; padding:18px; background:#fbfdfd; }
+    .tech-icon { display:grid; place-items:center; width:35px; height:35px; border-radius:11px; background:var(--mint); color:var(--teal-dark); font-size:17px; font-weight:850; margin-bottom:11px; }
+    .tech-card h3 { margin:0 0 7px; color:var(--navy); font-size:16px; }
+    .tech-card p { margin:0; color:var(--muted); font-size:13px; line-height:1.65; }
+    .flow-panel { margin-top:16px; border:1px solid var(--line); border-radius:17px; padding:19px; background:#f5f8f8; }
+    .flow-title { font-size:15px; font-weight:850; color:var(--navy); margin-bottom:13px; }
+    .flow-steps { display:flex; align-items:stretch; gap:8px; }
+    .flow-step { flex:1; display:flex; align-items:center; gap:8px; border:1px solid #dce7e9; border-radius:12px; background:#fff; padding:11px; color:var(--navy); font-size:12px; font-weight:700; }
+    .flow-step b { display:grid; place-items:center; flex:none; width:25px; height:25px; border-radius:8px; background:var(--mint); color:var(--teal-dark); }
+    .flow-arrow { align-self:center; color:var(--teal); font-weight:900; }
+    .flow-panel p { color:var(--muted); font-size:13px; line-height:1.6; margin:12px 0 0; }
+    @media(max-width:900px){ .tech-grid { grid-template-columns:repeat(2,1fr); } .flow-steps { flex-wrap:wrap; } .flow-step { min-width:calc(50% - 16px); } .flow-arrow { display:none; } }
+    @media(max-width:560px){ .tech-grid { grid-template-columns:1fr; } .flow-step { min-width:100%; } }
+
+
+    /* Enfoque funcional y explicación de las rutas de apoyo */
+    .route-explainer { background: #fff; }
+    .value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .value-card { border: 1px solid var(--line); border-radius: 19px; padding: 22px; background: #fbfdfd; }
+    .value-number { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--mint); color: var(--teal-dark); font-size: 13px; font-weight: 850; margin-bottom: 14px; }
+    .value-card h3 { color: var(--navy); font-size: 18px; margin: 0 0 8px; }
+    .value-card p { color: var(--muted); font-size: 14px; line-height: 1.7; margin: 0; }
+    .audience-note { margin-top: 17px; padding: 17px 19px; border-radius: 15px; background: #f0f5f6; color: #526976; font-size: 14px; line-height: 1.7; }
+    .audience-note strong { color: var(--navy); }
+    .route-cta { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 21px; margin-top: 17px; background: #173653; border-radius: 17px; color: white; }
+    .route-cta strong { display: block; font-size: 16px; margin-bottom: 3px; }
+    .route-cta span { display: block; color: #d1dfe6; font-size: 13px; }
+    .route-cta .btn { flex: none; background: #f2d48e; color: var(--navy); }
+    .modal-step { margin-top: 14px; }
+    .step-kicker { color: var(--teal); font-size: 11px; text-transform: uppercase; font-weight: 850; letter-spacing: .1em; margin-bottom: 8px; }
+    .step-label { display:block; color:var(--navy); font-size:13px; font-weight:800; margin: 12px 0 7px; }
+    .message-field { display:block; width:100%; min-height:105px; resize:vertical; border:1px solid #dce5e8; border-radius:12px; background:#fbfdfd; padding:12px; color:var(--ink); font:inherit; font-size:14px; line-height:1.6; }
+    .route-info-box { padding:15px; border:1px solid #dce7e9; border-radius:14px; background:#f5f9f9; color:#526976; font-size:13px; line-height:1.7; margin:13px 0; }
+    .route-info-box strong { color:var(--navy); }
+    .route-options { display:grid; gap:10px; margin:15px 0; }
+    .route-option { border:1px solid #dce6e8; border-radius:13px; padding:13px; display:flex; align-items:flex-start; gap:10px; color:var(--navy); font-size:13px; font-weight:750; }
+    .route-option input { margin-top:3px; accent-color:var(--teal); }
+    .route-option small { display:block; color:var(--muted); font-size:12px; font-weight:500; line-height:1.5; margin-top:3px; }
+    .modal .modal-actions { flex-wrap:wrap; }
+    @media (max-width: 760px) { .value-grid { grid-template-columns:1fr; } .route-cta { align-items:stretch; flex-direction:column; } .route-cta .btn { width:100%; } }
+
+
+    /* Ajuste de legibilidad: tipografía más grande en todo el prototipo */
+    body { font-size: 17px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    .brand-name { font-size: 21px; }
+    .brand-sub { font-size: 12px; }
+    .nav-links a, .nav-cta { font-size: 15px; }
+    .prototype-pill { font-size: 12.5px; padding: 8px 12px; }
+    .hero-copy p { font-size: 17px; }
+    .btn { font-size: 15.5px; }
+    .fine-note { font-size: 13px; line-height: 1.65; }
+    .phone-top { font-size: 14px; }
+    .greeting { font-size: 14px; }
+    .phone-title { font-size: 29px; }
+    .phone-description { font-size: 14px; line-height: 1.6; }
+    .mock-support-btn { font-size: 14px; }
+    .mini-tile { font-size: 13px; line-height: 1.45; }
+    .float-note strong { font-size: 13px; }
+    .float-note small { font-size: 12px; line-height: 1.5; }
+    .trust-label { font-size: 13px; }
+    .trust-item { font-size: 14px; }
+    .eyebrow { font-size: 12px; }
+    .section-head p { font-size: 15px; }
+    .panel-title { font-size: 19px; }
+    .subtle-label { font-size: 12px; }
+    .avatar { font-size: 14px; }
+    .contact-info strong { font-size: 14.5px; }
+    .contact-info span { font-size: 13.5px; line-height: 1.45; }
+    .field { font-size: 14px; }
+    .btn-small { font-size: 14px; min-height: 44px; }
+    .microcopy { font-size: 12.5px; line-height: 1.6; }
+    .request-panel p { font-size: 15px; }
+    .help-card h3 { font-size: 19px; }
+    .help-card p { font-size: 14.5px; }
+    .help-card .btn { font-size: 14px; }
+    .info-note { font-size: 13px; }
+    .privacy-copy p { font-size: 15px; }
+    .privacy-item strong { font-size: 14.5px; }
+    .privacy-item span { font-size: 13.5px; }
+    .footer-brand { font-size: 16px; }
+    .footer p, .footer-note { font-size: 12.5px; }
+    .modal h3 { font-size: 24px; }
+    .modal p { font-size: 14px; }
+    .choice { font-size: 14px; }
+    .modal-actions .btn { font-size: 14px; }
+    .simulation-result { font-size: 14px; }
+    .toast { font-size: 14px; }
+    .urgent-callout { font-size: 13px; }
+    .help-card > div[style*="font-size:10px"],
+    .help-card > a[style*="font-size:10px"] { font-size: 12.5px !important; line-height: 1.55; }
+    @media (max-width: 850px) {
+      .hero-copy p { font-size: 16px; }
+      .phone-title { font-size: 25px; }
+    }
+    @media (max-width: 640px) {
+      .nav-cta { font-size: 14px; }
+      .hero-copy p { font-size: 16px; }
+      .fine-note { font-size: 12.5px; }
+      .phone-title { font-size: 25px; }
+      .section-head p { font-size: 15px; }
+      .trust-item { font-size: 14px; }
+      .footer-note { font-size: 12.5px; }
+    }
+
+
+    /* PWA: navegación y controles de instalación */
+    .nav-actions { display:flex; align-items:center; gap:10px; }
+    .install-btn { border:1px solid var(--line); color:var(--navy); background:#fff; border-radius:13px; padding:11px 14px; font-weight:800; font-size:13px; }
+    .install-btn:hover { background:var(--sky); }
+    .app-status { display:inline-flex; align-items:center; gap:7px; padding:7px 11px; background:#f2faf7; border:1px solid #d9e7e4; border-radius:999px; color:var(--teal-dark); font-size:12px; font-weight:800; margin-top:12px; }
+    .app-status .dot { width:7px; height:7px; }
+    .mobile-nav { display:none; }
+    .install-help { background:#f4f8f8; border:1px solid var(--line); border-radius:15px; padding:14px 16px; color:var(--muted); font-size:13px; line-height:1.6; margin-top:14px; }
+    .install-help strong { color:var(--navy); }
+    @media(max-width:640px) {
+      body { padding-bottom:calc(75px + env(safe-area-inset-bottom)); }
+      .nav { gap:10px; }
+      .nav-actions { gap:7px; }
+      .install-btn { display:none; }
+      .nav-cta { padding:10px 12px; white-space:nowrap; }
+      .mobile-nav { position:fixed; z-index:25; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4,1fr); gap:3px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.97); border-top:1px solid var(--line); box-shadow:0 -8px 25px rgba(23,54,83,.08); backdrop-filter:blur(12px); }
+      .mobile-nav a, .mobile-nav button { min-width:0; border:0; border-radius:12px; text-decoration:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:6px 2px; font-size:10.5px; font-weight:800; }
+      .mobile-nav .mobile-nav-primary { background:var(--teal); color:#fff; }
+      .mobile-nav .nav-symbol { font-size:19px; line-height:1.15; }
+      .footer { padding-bottom:22px; }
+    }
+    @media(min-width:641px) and (max-width:850px) { .install-btn { display:none; } }
+
+
+    /* Centro de avisos: siempre funciona dentro de la página; avisos del navegador son opcionales. */
+    .notification-panel { background:#fff; border:1px solid var(--line); border-radius:22px; padding:22px; box-shadow:0 8px 24px rgba(23,54,83,.035); }
+    .notification-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; justify-content:space-between; margin-bottom:15px; }
+    .notification-toolbar p { color:var(--muted); font-size:13px; margin:0; }
+    .notification-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .notification-actions button { border:1px solid var(--line); background:#fff; border-radius:11px; padding:10px 12px; color:var(--navy); font-size:13px; font-weight:800; }
+    .notification-actions button.primary { background:var(--teal); border-color:var(--teal); color:white; }
+    .notification-list { display:grid; gap:10px; }
+    .notification-item { display:flex; gap:12px; align-items:flex-start; padding:13px; background:#f7faf9; border:1px solid #e5eeeb; border-radius:14px; }
+    .notification-item.unread { background:#f0f8f5; border-color:#cfe5dc; }
+    .notification-icon { width:36px; height:36px; flex:none; display:grid; place-items:center; border-radius:12px; background:#e2f1eb; color:var(--teal-dark); font-size:17px; }
+    .notification-copy { min-width:0; flex:1; }
+    .notification-copy strong { display:block; color:var(--navy); font-size:14px; margin-bottom:3px; }
+    .notification-copy p { color:var(--muted); font-size:13px; margin:0; line-height:1.5; }
+    .notification-copy small { display:block; color:#82929a; font-size:11px; margin-top:5px; }
+    .demo-chip { display:inline-block; font-size:9px; font-weight:900; letter-spacing:.04em; color:#76551b; background:#fff2d8; border-radius:999px; padding:3px 6px; vertical-align:middle; }
+    .notification-warning { margin-top:13px; background:#fff8e9; color:#765b2d; border-radius:12px; padding:12px 14px; font-size:12px; line-height:1.6; }
+    .empty-notifications { color:var(--muted); font-size:13px; padding:16px; text-align:center; border:1px dashed var(--line); border-radius:12px; }
+    @media(max-width:640px) { .notification-panel { padding:16px; } .notification-toolbar { align-items:flex-start; } .notification-actions { width:100%; } .notification-actions button { flex:1; } }
+
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="#inicio" aria-label="Red de Vida, inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7.5-4.4-7.5-10.1A4.2 4.2 0 0 1 12 7.5a4.2 4.2 0 0 1 7.5 2.4C19.5 15.6 12 20 12 20Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7.8c-1.7 1.6-2.2 3.6-1.3 5.7.6 1.3 1.7 2.1 3.1 2.5" stroke="#9BD4C6" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </span>
+        <span><span class="brand-name">Red de Vida</span><span class="brand-sub">Un apoyo más cerca</span></span>
+      </a>
+      <nav class="nav-links" aria-label="Navegación principal">
+        <a href="#como-funciona">Cómo funciona</a>
+        <a href="#avisos">Avisos</a>
+        <a href="#orientacion">Canales de ayuda</a>
+        <a href="#ficha-tecnica">Ficha técnica</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="install-btn" id="install-app" type="button">Instalar app ↓</button>
+        <button class="nav-cta" data-open-support>Necesito apoyo ↗</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <div class="prototype-pill"><span class="dot"></span> PROTOTIPO ACADÉMICO · DEMO INTERACTIVA</div>
+          <h1>Encuentra una ruta<br>de apoyo <span>a tiempo.</span></h1>
+          <p>Red de Vida te orienta para dar el siguiente paso: pedir acompañamiento a alguien de confianza o consultar un canal institucional cuando no sabes a quién acudir o esa persona no está disponible.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" data-open-support><svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-7-4.1-7-9.4A4 4 0 0 1 12 9a4 4 0 0 1 7 2.6C19 16.9 12 21 12 21Z" stroke="currentColor" stroke-width="1.7"/><path d="M12 12v5m-2.5-2.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Encontrar apoyo</button>
+            <a class="btn btn-secondary" href="#como-funciona">Cómo funciona <span aria-hidden="true">→</span></a>
+          </div>
+          <div class="fine-note">Prototipo académico para personas de 18 a 45 años en Cali. No envía alertas reales ni reemplaza la atención profesional o de emergencias.</div>
+          <div class="app-status"><span class="dot"></span> Adaptable a computador y celular</div>
+        </div>
+        <div class="hero-art" aria-label="Vista ilustrativa de la interfaz móvil de Red de Vida">
+          <div class="art-backdrop"></div>
+          <div class="phone-card">
+            <div class="phone-top"><span style="display:flex;gap:8px;align-items:center"><span class="tiny-logo">♡</span> RED DE VIDA</span><span>•••</span></div>
+            <div class="greeting">Hola. Vamos paso a paso.</div>
+            <div class="phone-title">¿Qué tipo de<br>apoyo necesitas?</div>
+            <div class="phone-description">Elige una ruta: acompañamiento personal u orientación institucional.</div>
+            <button class="mock-support-btn" data-open-support>♡ &nbsp; Encontrar una ruta de apoyo</button>
+            <div class="phone-bottom"><div class="mini-tile"><span>⌂</span>Acompañamiento personal</div><div class="mini-tile"><span>＋</span>Orientación institucional</div></div>
+          </div>
+          <div class="float-note"><span class="float-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.2-7-9.5A4 4 0 0 1 12 9a4 4 0 0 1 7 2.5C19 16.8 12 21 12 21Z" stroke="currentColor" stroke-width="1.7"/><path d="m9 13 2 2 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>Una ruta clara</strong><small>Una alternativa si tu contacto no está disponible.</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="trust-strip"><div class="shell trust-inner"><div class="trust-label">¿Qué aporta Red de Vida?</div><div class="trust-items"><div class="trust-item"><span class="check">✓</span>Ayuda a elegir por dónde empezar</div><div class="trust-item"><span class="check">✓</span>Prepara una solicitud clara</div><div class="trust-item"><span class="check">✓</span>Ofrece alternativas institucionales</div></div></div></div>
+
+    <section class="content-section" id="avisos" style="padding-bottom:28px">
+      <div class="shell">
+        <div class="section-head">
+          <div><div class="eyebrow">Centro de notificaciones</div><h2>Actividad y avisos</h2></div>
+          <p>Este panel muestra novedades dentro de la demostración. Los registros iniciales son ficticios y los avisos nuevos se generan al probar las funciones.</p>
+        </div>
+        <div class="notification-panel">
+          <div class="notification-toolbar">
+            <p><strong id="notification-count">3 avisos de demostración</strong> · Solo visibles en este navegador.</p>
+            <div class="notification-actions">
+              <button type="button" id="mark-notifications-read">Marcar como leídos</button>
+              <button type="button" class="primary" id="enable-notifications">Activar avisos del navegador</button>
+            </div>
+          </div>
+          <div class="notification-list" id="notification-list" aria-live="polite">
+            <article class="notification-item unread"><span class="notification-icon">✓</span><div class="notification-copy"><strong>Ruta de apoyo lista para revisar</strong><p>Ejemplo: se preparó una solicitud de acompañamiento.</p><small>Hoy · 9:20 a. m. · Dato ficticio</small></div></article>
+            <article class="notification-item unread"><span class="notification-icon">⌕</span><div class="notification-copy"><strong>Canal institucional consultado</strong><p>Ejemplo: se revisó la ficha informativa de la Línea 106.</p><small>Hoy · 9:05 a. m. · Dato ficticio</small></div></article>
+            <article class="notification-item unread"><span class="notification-icon">♡</span><div class="notification-copy"><strong>Red de confianza de demostración</strong><p>Se cargaron dos perfiles ficticios para poder probar el recorrido.</p><small>Hoy · 8:50 a. m. · Dato ficticio</small></div></article>
+          </div>
+          <div class="notification-warning"><strong>Alcance de los avisos:</strong> las notificaciones de esta versión aparecen en la página y, si el navegador lo permite y das permiso, como aviso local en tu propio dispositivo. No llegan a Laura, Daniel ni a ninguna persona o institución. No son alertas de emergencia.</div>
+          <p id="notification-permission-status" class="microcopy">Avisos del navegador: todavía no activados. El centro de avisos de esta página funciona sin permisos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section route-explainer" id="como-funciona">
+      <div class="shell">
+        <div class="section-head">
+          <div><div class="eyebrow">La función principal</div><h2>No es una agenda de contactos: es una guía para encontrar apoyo</h2></div>
+          <p>La página ayuda a decidir qué hacer cuando necesitas acompañamiento y no sabes cómo pedirlo, tu persona de confianza no está cerca o no está disponible.</p>
+        </div>
+        <div class="value-grid">
+          <article class="value-card"><span class="value-number">01</span><h3>Identifica qué necesitas</h3><p>La persona elige si quiere hablar con alguien, recibir orientación emocional o consultar qué hacer ante una emergencia.</p></article>
+          <article class="value-card"><span class="value-number">02</span><h3>Encuentra una ruta</h3><p>Puede preparar una solicitud para un contacto de confianza o pasar a los canales institucionales disponibles en Cali.</p></article>
+          <article class="value-card"><span class="value-number">03</span><h3>Revisa antes de actuar</h3><p>El prototipo muestra el mensaje y la opción elegida antes de simular el resultado. No contacta a nadie automáticamente.</p></article>
+        </div>
+        <div class="audience-note"><strong>¿Para quién está pensado?</strong> El alcance inicial del proyecto se dirige a personas de 18 a 45 años en Cali. La red de confianza es una ruta posible, no el único motivo para usar la página: cuando esa persona no está disponible, la herramienta también muestra alternativas institucionales.</div>
+        <div class="route-cta"><div><strong>Prueba el recorrido principal</strong><span>Elige una necesidad y descubre qué ruta te ofrece el prototipo.</span></div><button class="btn btn-primary" data-open-support>Encontrar mi ruta →</button></div>
+      </div>
+    </section>
+
+    <section class="content-section" id="mi-red">
+      <div class="shell">
+        <div class="section-head"><div><div class="eyebrow">Ruta de acompañamiento personal</div><h2>Personas a quienes podrías pedir apoyo</h2></div><p>Esta lista es opcional: sirve para elegir a quién dirigir una solicitud de ejemplo. La función central de Red de Vida es orientarte entre esta ruta y las alternativas institucionales.</p></div>
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-head"><h3 class="panel-title">Contactos de confianza (de prueba)</h3><span class="subtle-label" id="contact-count">2 contactos ficticios</span></div>
+            <div class="contact-list" id="contact-list" aria-live="polite">
+              <div class="contact"><div class="avatar">LM</div><div class="contact-info"><strong data-name="Laura M.">Laura M. <span class="demo-chip">FICTICIO</span></strong><span>Amistad · contacto de demostración</span></div><span class="contact-status" aria-label="Contacto ficticio"></span></div>
+              <div class="contact"><div class="avatar" style="background:#fff2dc;color:#946f2d">DR</div><div class="contact-info"><strong data-name="Daniel R.">Daniel R. <span class="demo-chip">FICTICIO</span></strong><span>Familia · contacto de demostración</span></div><span class="contact-status" aria-label="Contacto ficticio"></span></div>
+            </div>
+            <form class="add-contact-form" id="add-contact-form">
+              <label class="sr-only" for="contact-name" style="position:absolute;left:-9999px">Nombre ficticio o alias</label>
+              <input class="field" id="contact-name" maxlength="35" placeholder="Nombre o alias" autocomplete="off" required />
+              <label class="sr-only" for="contact-relation" style="position:absolute;left:-9999px">Relación</label>
+              <select class="field" id="contact-relation"><option>Amistad</option><option>Familia</option><option>Otra persona</option></select>
+              <button class="btn-small" type="submit">+ Añadir</button>
+            </form>
+            <p class="microcopy">Usa alias de prueba. No escribas teléfonos ni información sensible. Esta lista no envía mensajes ni sustituye la agenda de tu teléfono.</p>
+          </div>
+          <div class="panel request-panel">
+            <div class="request-big-icon"><svg width="27" height="27" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.2-7-9.5A4 4 0 0 1 12 9a4 4 0 0 1 7 2.5C19 16.8 12 21 12 21Z" stroke="currentColor" stroke-width="1.7"/><path d="M12 12v5m-2.5-2.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+            <div class="panel-head"><h3 class="panel-title">Pedir apoyo</h3><span class="subtle-label" style="background:rgba(255,255,255,.12);color:#d5e5eb">Modo demostración</span></div>
+            <p>Si quieres hablar con alguien, el prototipo te ayuda a seleccionar un contacto y preparar un mensaje claro. Si no está disponible, puedes pasar a orientación institucional.</p>
+            <button class="btn btn-primary" data-open-support>Elegir una ruta de apoyo <span aria-hidden="true">→</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section help-section" id="orientacion">
+      <div class="shell">
+        <div class="section-head"><div><div class="eyebrow">Ruta institucional alternativa</div><h2>¿Tu contacto no está disponible?</h2></div><p>Red de Vida también facilita encontrar opciones institucionales de orientación. Consulta los canales y elige el que corresponda a tu situación; la página no decide por ti ni contacta a las instituciones.</p></div>
+        <div class="help-grid">
+          <article class="help-card"><div class="help-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.7 19.7 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.7 19.7 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div><h3>Línea 106 · Salud mental</h3><p>Orientación y apoyo emocional para situaciones que afectan el bienestar. En Cali, la Alcaldía informa disponibilidad 24/7 y atención por WhatsApp.</p><a class="btn btn-secondary" href="tel:106">Llamar al 106 ↗</a><div style="font-size:10px;color:#7b8b95;margin-top:10px">Cali · WhatsApp oficial: 316 245 8423</div><a href="https://www.cali.gov.co/boletines/publicaciones/192156/alcaldia-de-cali-prioriza-la-linea-106-para-teleorientacion/" target="_blank" rel="noreferrer" style="font-size:10px;color:var(--teal-dark);margin-top:7px">Consultar información oficial ↗</a></article>
+          <article class="help-card"><div class="help-icon emergency"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.6"/></svg></div><h3>Línea 123 · Emergencias</h3><p>Para una emergencia inmediata o cuando alguien necesita una respuesta urgente de los servicios de emergencia.</p><a class="btn btn-secondary" href="tel:123">Llamar al 123 ↗</a><div style="font-size:10px;color:#7b8b95;margin-top:10px">Si existe peligro inmediato, no dependas de este prototipo.</div></article>
+        </div>
+        <div class="info-note"><strong>Importante:</strong> Red de Vida es un prototipo académico y no es un servicio de atención. No diagnostica, no sustituye a profesionales y no garantiza una respuesta inmediata. Los canales deben volver a verificarse antes de una publicación o implementación real.</div>
+      </div>
+    </section>
+
+    <section class="content-section" id="privacidad">
+      <div class="shell privacy-grid">
+        <div class="privacy-copy"><div class="eyebrow">Seguridad y confianza</div><h2>La ayuda empieza con la confianza.</h2><p>El diseño sigue una regla sencilla: la persona debe entender qué ocurre antes de activar un aviso. La versión académica no envía notificaciones reales, no solicita números telefónicos y no transmite la lista de contactos.</p><span class="prototype-pill"><span class="dot"></span> Sin mensajes reales</span></div>
+        <div class="privacy-list">
+          <div class="privacy-item"><span class="check">✓</span><div><strong>Consentimiento explícito</strong><span>Se muestra una confirmación antes de simular el aviso.</span></div></div>
+          <div class="privacy-item"><span class="check">✓</span><div><strong>Datos mínimos</strong><span>Los contactos de demostración y avisos se conservan solo en este navegador mediante almacenamiento local. Usa exclusivamente alias ficticios y borra los datos de prueba al terminar.</span></div></div>
+          <div class="privacy-item"><span class="check">✓</span><div><strong>Límites transparentes</strong><span>La interfaz explica que no es un servicio clínico ni reemplaza a emergencias.</span></div></div>
+          <div class="privacy-item"><span class="check">✓</span><div><strong>Pruebas responsables</strong><span>La validación del curso debe hacerse con participantes voluntarios y sin registrar historias personales.</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section tech-section" id="ficha-tecnica">
+      <div class="shell">
+        <div class="section-head"><div><div class="eyebrow">Descripción de la propuesta</div><h2>Ficha técnica del prototipo</h2></div><p>Esta versión permite comprender la forma, el contexto de uso y la lógica general de la solución, sin presentarse como un servicio terminado.</p></div>
+        <div class="tech-grid">
+          <article class="tech-card"><span class="tech-icon">⌘</span><h3>Forma y contexto</h3><p>Aplicación web adaptable a computador y celular, pensada para personas de 18 a 45 años en Cali que necesitan identificar una ruta de apoyo.</p></article>
+          <article class="tech-card"><span class="tech-icon">↗</span><h3>Funcionalidad</h3><p>Permite escoger una necesidad, preparar una solicitud para un contacto ficticio o consultar la orientación institucional de las líneas 106 y 123.</p></article>
+          <article class="tech-card"><span class="tech-icon">{ }</span><h3>Parámetros técnicos</h3><p>HTML, CSS y JavaScript con diseño adaptable. Incluye manifiesto PWA y caché básica para instalarse desde el navegador cuando se aloje en HTTPS.</p></article>
+          <article class="tech-card"><span class="tech-icon">▤</span><h3>Datos y límites</h3><p>No tiene servidor ni base de datos central. Guarda localmente alias y actividad de demostración en este navegador; no envía mensajes ni realiza llamadas automáticas.</p></article>
+        </div>
+        <div class="install-help"><strong>Uso en dos plataformas:</strong> en computador se abre desde un navegador; en Android o iPhone se adapta a la pantalla móvil. Al publicarla en una dirección HTTPS, el navegador permite agregarla a la pantalla de inicio como una app. La instalación no convierte esta versión en una app nativa ni activa alertas reales.</div>
+        <div class="flow-panel">
+          <div class="flow-title">Flujo general de funcionamiento</div>
+          <div class="flow-steps">
+            <div class="flow-step"><b>1</b><span>La persona identifica qué necesita</span></div><div class="flow-arrow">→</div>
+            <div class="flow-step"><b>2</b><span>Elige una ruta de apoyo</span></div><div class="flow-arrow">→</div>
+            <div class="flow-step"><b>3</b><span>Revisa el mensaje o canal</span></div><div class="flow-arrow">→</div>
+            <div class="flow-step"><b>4</b><span>Prueba la simulación</span></div>
+          </div>
+          <p>La ruta personal permite preparar un mensaje de ejemplo para un contacto elegido. La ruta institucional presenta información de orientación; el usuario decide qué canal consultar.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="shell footer-inner"><div><div class="footer-brand">♡ Red de Vida</div><p>Prototipo de mediana fidelidad · Introducción a la Ingeniería de Datos e Inteligencia Artificial</p></div><div class="footer-note">Universidad Autónoma de Occidente · Cali, Colombia<br>Versión para validación académica. No utilizar como servicio de emergencia.</div></div></footer>
+
+  <div class="modal-backdrop" id="support-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal">
+      <div class="modal-top"><div><div class="modal-badge">♡</div><h3 id="modal-title">Encuentra tu ruta de apoyo</h3></div><button class="modal-close" id="modal-close" aria-label="Cerrar ventana">×</button></div>
+      <p id="modal-intro">La página te ayuda a elegir un siguiente paso. Selecciona la opción que más se acerque a lo que necesitas.</p>
+
+      <div id="route-step" class="modal-step">
+        <div class="step-kicker">Paso 1 · Identifica tu necesidad</div>
+        <div class="choice-list route-options" role="radiogroup" aria-label="Necesidad de apoyo">
+          <label class="route-option"><input type="radio" name="support-route" value="personal" checked><span>Quiero hablar o recibir acompañamiento de alguien.<small>Prepara una solicitud para una persona de confianza.</small></span></label>
+          <label class="route-option"><input type="radio" name="support-route" value="orientation"><span>Necesito orientación emocional o no sé a quién acudir.<small>Consulta la información de la Línea 106 en Cali.</small></span></label>
+          <label class="route-option"><input type="radio" name="support-route" value="emergency"><span>Hay una emergencia o peligro inmediato.<small>La página te recuerda utilizar directamente el canal de emergencias.</small></span></label>
+        </div>
+        <div class="urgent-callout">Red de Vida no evalúa emergencias ni reemplaza la atención profesional. Ante peligro inmediato, llama directamente al <strong>123</strong>.</div>
+        <div class="modal-actions"><button class="btn btn-secondary" id="modal-cancel">Cancelar</button><button class="btn btn-primary" id="continue-route">Continuar →</button></div>
+      </div>
+
+      <div id="personal-step" class="modal-step" hidden>
+        <div class="step-kicker">Paso 2 · Ruta de acompañamiento personal</div>
+        <div class="route-info-box"><strong>¿Por qué usar esta ruta?</strong><br>Cuando no sabes cómo pedir compañía, Red de Vida te ayuda a preparar un mensaje claro. Si esa persona no está disponible, puedes volver y consultar la ruta institucional.</div>
+        <label class="step-label" for="contact-target">¿A quién te gustaría dirigir el mensaje?</label>
+        <select class="field" id="contact-target"></select>
+        <label class="step-label" for="message-draft">Mensaje de ejemplo (puedes ajustarlo)</label>
+        <textarea class="message-field" id="message-draft">Hola, ¿tienes un momento para hablar conmigo? Me ayudaría recibir tu acompañamiento.</textarea>
+        <div class="modal-actions"><button class="btn btn-secondary" id="back-to-route">Volver</button><button class="btn btn-primary" id="review-personal">Revisar mensaje →</button></div>
+      </div>
+
+      <div id="institution-step" class="modal-step" hidden>
+        <div class="step-kicker">Ruta institucional</div>
+        <div class="route-info-box"><strong>Si tu contacto no está disponible</strong><br>Red de Vida te muestra canales institucionales para que puedas consultar una alternativa. Debes elegir el canal según tu situación; el prototipo no realiza llamadas.</div>
+        <div class="route-options">
+          <label class="route-option"><input type="radio" name="institution-channel" value="106" checked><span>Línea 106 · Orientación en salud mental.<small>La información del proyecto la presenta como canal de orientación emocional en Cali.</small></span></label>
+          <label class="route-option"><input type="radio" name="institution-channel" value="123"><span>Línea 123 · Emergencias.<small>Para una emergencia inmediata o cuando se necesita respuesta urgente de los servicios de emergencia.</small></span></label>
+        </div>
+        <div class="urgent-callout">Si existe peligro inmediato, no dependas de este prototipo: utiliza directamente el 123.</div>
+        <div class="modal-actions"><button class="btn btn-secondary" id="back-from-institution">Volver</button><button class="btn btn-primary" id="show-institution">Ver ruta seleccionada →</button></div>
+      </div>
+
+      <div id="review-area" class="modal-step" hidden>
+        <div class="step-kicker">Paso final · Revisión</div>
+        <p><strong id="review-title">Revisa tu selección</strong></p>
+        <div class="route-info-box" id="review-summary"></div>
+        <p id="review-disclaimer">Esta es una simulación académica. No se enviará ningún mensaje ni se contactará a ninguna persona.</p>
+        <div class="modal-actions"><button class="btn btn-secondary" id="edit-route">Volver</button><button class="btn btn-primary" id="simulate-support">Simular recorrido</button></div>
+      </div>
+
+      <div id="simulation-result" class="simulation-result" role="status"><strong>Simulación completada.</strong><br>Este paso permite probar el recorrido de la interfaz. No se envió ningún mensaje ni se contactó a ninguna persona.</div>
+      <div id="finish-area" class="modal-actions" hidden><button class="btn btn-primary" id="finish-support">Listo</button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <nav class="mobile-nav" aria-label="Navegación rápida">
+    <a href="#inicio"><span class="nav-symbol">⌂</span><span>Inicio</span></a>
+    <button class="mobile-nav-primary" type="button" data-open-support><span class="nav-symbol">♡</span><span>Pedir apoyo</span></button>
+    <a href="#mi-red"><span class="nav-symbol">◎</span><span>Mi red</span></a>
+    <a href="#orientacion"><span class="nav-symbol">＋</span><span>Canales</span></a>
+  </nav>
+
+  <script>
+    (() => {
+      const modal = document.getElementById('support-modal');
+      const routeStep = document.getElementById('route-step');
+      const personalStep = document.getElementById('personal-step');
+      const institutionStep = document.getElementById('institution-step');
+      const reviewArea = document.getElementById('review-area');
+      const result = document.getElementById('simulation-result');
+      const finishArea = document.getElementById('finish-area');
+      const toast = document.getElementById('toast');
+      const contactList = document.getElementById('contact-list');
+      const contactCount = document.getElementById('contact-count');
+      let selectedRoute = 'personal';
+      let selectedChannel = '106';
+      let lastDemoSummary = 'Se completó un recorrido de demostración.';
+      let toastTimer;
+
+      const NOTIFICATION_KEY = 'redvida_demo_notifications_v1';
+      const CONTACTS_KEY = 'redvida_demo_contacts_v1';
+      let allowBrowserNotices = false;
+      const seedNotifications = [
+        { title: 'Ruta de apoyo lista para revisar', body: 'Ejemplo: se preparó una solicitud de acompañamiento.', time: 'Hoy · 9:20 a. m. · Dato ficticio', read: false, icon: '✓' },
+        { title: 'Canal institucional consultado', body: 'Ejemplo: se revisó la ficha informativa de la Línea 106.', time: 'Hoy · 9:05 a. m. · Dato ficticio', read: false, icon: '⌕' },
+        { title: 'Red de confianza de demostración', body: 'Se cargaron dos perfiles ficticios para probar el recorrido.', time: 'Hoy · 8:50 a. m. · Dato ficticio', read: false, icon: '♡' }
+      ];
+      let notifications = loadJson(NOTIFICATION_KEY, seedNotifications);
+
+      function loadJson(key, fallback) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          return Array.isArray(parsed) ? parsed : fallback;
+        } catch (_) { return fallback; }
+      }
+      function saveJson(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); }
+        catch (_) { /* El prototipo sigue funcionando aunque el navegador bloquee el almacenamiento. */ }
+      }
+      function renderNotifications() {
+        const host = document.getElementById('notification-list');
+        if (!host) return;
+        const unread = notifications.filter(item => !item.read).length;
+        document.getElementById('notification-count').textContent = `${unread} avisos sin leer · ${notifications.length} en total`;
+        host.innerHTML = '';
+        if (!notifications.length) {
+          host.innerHTML = '<div class="empty-notifications">Todavía no hay avisos. Prueba una función para generar actividad de demostración.</div>';
+          return;
+        }
+        notifications.slice(0, 12).forEach(item => {
+          const article = document.createElement('article');
+          article.className = `notification-item${item.read ? '' : ' unread'}`;
+          const icon = document.createElement('span'); icon.className = 'notification-icon'; icon.textContent = item.icon || '•';
+          const copy = document.createElement('div'); copy.className = 'notification-copy';
+          const title = document.createElement('strong'); title.textContent = item.title;
+          const body = document.createElement('p'); body.textContent = item.body;
+          const time = document.createElement('small'); time.textContent = item.time || 'Actividad de demostración';
+          copy.append(title, body, time); article.append(icon, copy); host.appendChild(article);
+        });
+        saveJson(NOTIFICATION_KEY, notifications);
+      }
+      function addNotification(title, body, icon = '•', showSystem = true) {
+        const now = new Date();
+        const time = `Ahora · ${now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })} · Demo`;
+        notifications.unshift({ title, body, time, icon, read: false });
+        notifications = notifications.slice(0, 30);
+        renderNotifications();
+        if (showSystem && allowBrowserNotices && 'Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('Red de Vida · Demostración', { body: 'Hay una actualización en tu demostración. Abre la página para verla.' }); }
+          catch (_) { showToast('Nuevo aviso dentro de Red de Vida.'); }
+        }
+      }
+      document.getElementById('mark-notifications-read').addEventListener('click', () => {
+        notifications = notifications.map(item => ({ ...item, read: true }));
+        renderNotifications();
+        showToast('Avisos marcados como leídos.');
+      });
+      document.getElementById('enable-notifications').addEventListener('click', async () => {
+        const status = document.getElementById('notification-permission-status');
+        if (!('Notification' in window)) {
+          status.textContent = 'Este navegador no permite avisos del sistema. Los avisos dentro de la página siguen funcionando.';
+          showToast('El centro de avisos de la página sigue activo.');
+          return;
+        }
+        if (Notification.permission === 'granted') {
+          allowBrowserNotices = true;
+          status.textContent = 'Avisos del navegador activados en este dispositivo. No se envían a contactos.';
+          addNotification('Avisos del dispositivo activados', 'El navegador puede mostrar avisos locales de esta demostración.', '✓', false);
+          showToast('Avisos locales activados.');
+          return;
+        }
+        if (Notification.permission === 'denied') {
+          status.textContent = 'El permiso está bloqueado en el navegador. Puedes seguir viendo avisos dentro de esta página.';
+          showToast('Permiso bloqueado; los avisos internos siguen funcionando.');
+          return;
+        }
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            allowBrowserNotices = true;
+            status.textContent = 'Avisos del navegador activados en este dispositivo. No se envían a contactos.';
+            addNotification('Avisos del dispositivo activados', 'El navegador puede mostrar avisos locales de esta demostración.', '✓', false);
+            showToast('Avisos locales activados.');
+          } else {
+            status.textContent = 'No se concedió el permiso. Los avisos dentro de la página continúan funcionando.';
+            showToast('Puedes seguir usando el centro de avisos.');
+          }
+        } catch (_) {
+          status.textContent = 'Para mostrar avisos del sistema, abre esta página desde HTTPS o localhost. Los avisos internos siguen funcionando.';
+          showToast('Avisos del navegador no disponibles en este modo de apertura.');
+        }
+      });
+      renderNotifications();
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+      }
+      function showStep(step) {
+        [routeStep, personalStep, institutionStep, reviewArea].forEach(el => el.hidden = el !== step);
+      }
+      function resetModal() {
+        selectedRoute = 'personal';
+        selectedChannel = '106';
+        document.querySelector('input[name="support-route"][value="personal"]').checked = true;
+        document.querySelector('input[name="institution-channel"][value="106"]').checked = true;
+        showStep(routeStep);
+        result.classList.remove('show');
+        finishArea.hidden = true;
+        document.getElementById('modal-title').textContent = 'Encuentra tu ruta de apoyo';
+        document.getElementById('modal-intro').textContent = 'La página te ayuda a elegir un siguiente paso. Selecciona la opción que más se acerque a lo que necesitas.';
+      }
+      function openModal() {
+        resetModal();
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('modal-close').focus(), 50);
+      }
+      function closeModal() {
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+      document.querySelectorAll('[data-open-support]').forEach(button => button.addEventListener('click', openModal));
+      document.getElementById('modal-close').addEventListener('click', closeModal);
+      document.getElementById('modal-cancel').addEventListener('click', closeModal);
+      document.getElementById('finish-support').addEventListener('click', closeModal);
+      modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape' && modal.classList.contains('show')) closeModal(); });
+
+      // Carga alias ficticios guardados localmente. No almacena teléfonos ni datos sensibles.
+      function restoreDemoContacts() {
+        const saved = loadJson(CONTACTS_KEY, null);
+        if (!saved || !Array.isArray(saved) || !saved.length) {
+          const initial = [
+            { name: 'Laura M.', relation: 'Amistad' },
+            { name: 'Daniel R.', relation: 'Familia' }
+          ];
+          saveJson(CONTACTS_KEY, initial);
+          return;
+        }
+        contactList.innerHTML = '';
+        saved.forEach(item => appendContactCard(item.name, item.relation, false));
+      }
+      function appendContactCard(name, relation, announce = true) {
+        const initials = name.split(/\s+/).slice(0,2).map(part => part[0]).join('').toUpperCase();
+        const card = document.createElement('div');
+        card.className = 'contact';
+        const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = initials;
+        const info = document.createElement('div'); info.className = 'contact-info';
+        const strong = document.createElement('strong'); strong.textContent = name + ' '; strong.dataset.name = name;
+        const chip = document.createElement('span'); chip.className = 'demo-chip'; chip.textContent = 'FICTICIO'; strong.appendChild(chip);
+        const sub = document.createElement('span'); sub.textContent = `${relation} · alias de demostración`;
+        info.append(strong, sub);
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'remove-contact'; remove.textContent = '×'; remove.title = 'Eliminar alias'; remove.setAttribute('aria-label', 'Eliminar alias ' + name);
+        remove.addEventListener('click', () => {
+          card.remove(); persistContacts(); updateContactCount();
+          addNotification('Alias de demostración eliminado', 'Se actualizó la lista local de contactos ficticios.', '−');
+          showToast('Alias eliminado.');
+        });
+        card.append(avatar, info, remove); contactList.appendChild(card);
+        if (announce) {
+          persistContacts(); updateContactCount();
+          addNotification('Alias agregado a la red de prueba', `${name} se añadió como contacto ficticio.`, '+');
+        }
+      }
+      function persistContacts() {
+        const contacts = [...contactList.querySelectorAll('.contact')].map(card => ({
+          name: card.querySelector('.contact-info strong')?.dataset.name || card.querySelector('.contact-info strong')?.childNodes[0]?.textContent?.trim() || 'Alias',
+          relation: (card.querySelector('.contact-info > span')?.textContent || card.querySelector('.contact-info span:not(.demo-chip)')?.textContent || 'Amistad').split(' · ')[0]
+        }));
+        saveJson(CONTACTS_KEY, contacts);
+      }
+
+      function populateContactOptions() {
+        const select = document.getElementById('contact-target');
+        const current = select.value;
+        select.innerHTML = '';
+        const contacts = [...contactList.querySelectorAll('.contact-info strong')].map(el => el.dataset.name || el.textContent.replace('FICTICIO', '').trim()).filter(Boolean);
+        if (!contacts.length) {
+          const opt = document.createElement('option');
+          opt.value = ''; opt.textContent = 'No hay contactos de prueba disponibles';
+          select.appendChild(opt);
+          return;
+        }
+        contacts.forEach((name, i) => {
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          if (name === current || (!current && i === 0)) opt.selected = true;
+          select.appendChild(opt);
+        });
+      }
+
+      document.getElementById('continue-route').addEventListener('click', () => {
+        selectedRoute = document.querySelector('input[name="support-route"]:checked')?.value || 'personal';
+        if (selectedRoute === 'personal') {
+          populateContactOptions();
+          showStep(personalStep);
+          document.getElementById('modal-intro').textContent = 'Prepara una solicitud para una persona de tu red de confianza.';
+          document.getElementById('modal-title').textContent = 'Pedir acompañamiento';
+        } else {
+          showStep(institutionStep);
+          document.getElementById('modal-intro').textContent = selectedRoute === 'emergency'
+            ? 'Selecciona el canal institucional correspondiente. Ante peligro inmediato, utiliza directamente el 123.'
+            : 'Consulta la alternativa institucional que el proyecto presenta para orientación en salud mental.';
+          document.getElementById('modal-title').textContent = 'Consultar un canal de ayuda';
+          if (selectedRoute === 'emergency') document.querySelector('input[name="institution-channel"][value="123"]').checked = true;
+          else document.querySelector('input[name="institution-channel"][value="106"]').checked = true;
+        }
+      });
+
+      document.getElementById('back-to-route').addEventListener('click', () => {
+        showStep(routeStep);
+        document.getElementById('modal-title').textContent = 'Encuentra tu ruta de apoyo';
+        document.getElementById('modal-intro').textContent = 'La página te ayuda a elegir un siguiente paso. Selecciona la opción que más se acerque a lo que necesitas.';
+      });
+      document.getElementById('back-from-institution').addEventListener('click', () => {
+        showStep(routeStep);
+        document.getElementById('modal-title').textContent = 'Encuentra tu ruta de apoyo';
+        document.getElementById('modal-intro').textContent = 'La página te ayuda a elegir un siguiente paso. Selecciona la opción que más se acerque a lo que necesitas.';
+      });
+
+      document.getElementById('review-personal').addEventListener('click', () => {
+        const target = document.getElementById('contact-target').value;
+        const message = document.getElementById('message-draft').value.trim();
+        if (!target) {
+          showToast('Añade primero un contacto ficticio en la sección Mi red de confianza.');
+          return;
+        }
+        if (!message) {
+          showToast('Escribe un mensaje de ejemplo antes de continuar.');
+          document.getElementById('message-draft').focus();
+          return;
+        }
+        document.getElementById('review-title').textContent = 'Solicitud para tu red de confianza';
+        document.getElementById('review-summary').innerHTML = `<strong>Contacto seleccionado:</strong> ${safeText(target)}<br><br><strong>Mensaje que se mostraría:</strong><br>${safeText(message)}`;
+        lastDemoSummary = `Se preparó una solicitud ficticia para ${target}.`;
+        document.getElementById('review-disclaimer').textContent = 'En esta versión solo se prepara y simula el aviso. No se envía un mensaje real ni se contacta a la persona seleccionada.';
+        showStep(reviewArea);
+        document.getElementById('modal-title').textContent = 'Revisa antes de continuar';
+        document.getElementById('modal-intro').textContent = 'Comprueba a quién iría dirigido el mensaje y qué comunicaría.';
+      });
+
+      document.getElementById('show-institution').addEventListener('click', () => {
+        selectedChannel = document.querySelector('input[name="institution-channel"]:checked')?.value || '106';
+        const isEmergency = selectedChannel === '123';
+        lastDemoSummary = isEmergency ? 'Se consultó la ficha informativa de la Línea 123.' : 'Se consultó la ficha informativa de la Línea 106.';
+        document.getElementById('review-title').textContent = isEmergency ? 'Ruta institucional seleccionada: Línea 123' : 'Ruta institucional seleccionada: Línea 106';
+        document.getElementById('review-summary').innerHTML = isEmergency
+          ? '<strong>Línea 123 · Emergencias</strong><br>Canal indicado para una emergencia inmediata o cuando se requiere respuesta urgente de los servicios de emergencia.<br><br><a href="tel:123" class="btn btn-primary">Llamar al 123</a>'
+          : '<strong>Línea 106 · Orientación en salud mental</strong><br>Canal de orientación emocional que el proyecto presenta para Cali. La información del proyecto indica atención 24/7 y un canal de WhatsApp.<br><br><a href="tel:106" class="btn btn-primary">Llamar al 106</a> <a href="https://www.cali.gov.co/boletines/publicaciones/192156/alcaldia-de-cali-prioriza-la-linea-106-para-teleorientacion/" target="_blank" rel="noreferrer">Consultar información oficial</a>';
+        document.getElementById('review-disclaimer').textContent = 'La página solo muestra la ruta elegida. No realiza llamadas ni transmite información a instituciones. Verifica los canales oficiales antes de utilizarlos.';
+        showStep(reviewArea);
+        document.getElementById('modal-title').textContent = 'Revisa la ruta seleccionada';
+        document.getElementById('modal-intro').textContent = 'Esta es la alternativa institucional que elegiste consultar.';
+        document.getElementById('simulate-support').textContent = 'Finalizar demostración';
+      });
+
+      document.getElementById('edit-route').addEventListener('click', () => {
+        result.classList.remove('show');
+        finishArea.hidden = true;
+        document.getElementById('simulate-support').textContent = 'Simular recorrido';
+        if (selectedRoute === 'personal') {
+          showStep(personalStep);
+          document.getElementById('modal-title').textContent = 'Pedir acompañamiento';
+        } else {
+          showStep(institutionStep);
+          document.getElementById('modal-title').textContent = 'Consultar un canal de ayuda';
+        }
+      });
+
+      document.getElementById('simulate-support').addEventListener('click', () => {
+        reviewArea.hidden = true;
+        result.classList.add('show');
+        finishArea.hidden = false;
+        document.getElementById('modal-intro').textContent = 'Así termina el recorrido en esta versión de prueba.';
+        document.getElementById('simulate-support').textContent = 'Simular recorrido';
+        addNotification('Recorrido de apoyo simulado', lastDemoSummary + ' No se envió información a nadie.', '✓');
+        showToast('Demostración completada: no se realizó ningún envío ni llamada.');
+      });
+
+      function updateContactCount() {
+        const count = contactList.querySelectorAll('.contact').length;
+        contactCount.textContent = `${count} ${count === 1 ? 'contacto' : 'contactos'} de ejemplo`;
+      }
+      function safeText(text) { return String(text).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
+      document.getElementById('add-contact-form').addEventListener('submit', event => {
+        event.preventDefault();
+        const nameField = document.getElementById('contact-name');
+        const relationField = document.getElementById('contact-relation');
+        const name = nameField.value.trim();
+        if (!name) { nameField.focus(); return; }
+        if (contactList.querySelectorAll('.contact').length >= 8) {
+          showToast('Para esta demostración puedes añadir hasta 8 alias.');
+          return;
+        }
+        appendContactCard(name, relationField.value, true);
+        nameField.value = '';
+        showToast('Alias de prueba añadido.');
+      });
+      restoreDemoContacts();
+      // Asegura que los alias iniciales tengan controles de eliminación.
+      contactList.querySelectorAll('.contact').forEach(card => {
+        if (card.querySelector('.remove-contact')) return;
+        const button = document.createElement('button');
+        button.type = 'button'; button.className = 'remove-contact'; button.setAttribute('aria-label', 'Eliminar alias de demostración'); button.title = 'Eliminar alias'; button.textContent = '×';
+        button.addEventListener('click', () => {
+          card.remove(); persistContacts(); updateContactCount();
+          addNotification('Alias de demostración eliminado', 'Se actualizó la lista local de contactos ficticios.', '−');
+          showToast('Alias eliminado.');
+        });
+        card.appendChild(button);
+      });
+      updateContactCount();
+
+      // Instalación como PWA. Requiere servir el proyecto desde HTTPS o localhost.
+      const installButton = document.getElementById('install-app');
+      let installPrompt = null;
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        installPrompt = event;
+        installButton.textContent = 'Instalar app ↓';
+      });
+      installButton.addEventListener('click', async () => {
+        if (installPrompt) {
+          installPrompt.prompt();
+          await installPrompt.userChoice;
+          installPrompt = null;
+          return;
+        }
+        showToast('Para instalar: publica la carpeta en HTTPS y usa “Añadir a pantalla de inicio” en el navegador.');
+      });
+      window.addEventListener('appinstalled', () => showToast('Red de Vida se agregó a este dispositivo.'));
+
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {
+            showToast('La vista web funciona; no se pudo activar el modo sin conexión.');
+          });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
