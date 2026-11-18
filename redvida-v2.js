@@ -5,7 +5,7 @@
   var validConfig = typeof cfg.url === 'string' && /^https:\/\/.+\.supabase\.co\/?$/.test(cfg.url) &&
     typeof cfg.publishableKey === 'string' && cfg.publishableKey.length > 20;
   var BUCKET = 'redvida-evidence';
-  var db = null, currentUser = null, currentProfile = null, authMode = 'login';
+  var db = null, currentUser = null, currentProfile = null, authMode = 'login', cachedResources = [];
   var $ = function (s, root) { return (root || document).querySelector(s); };
   var el = function (tag, cls, text) {
     var n = document.createElement(tag);
@@ -66,7 +66,7 @@
     var help = $('#orientacion');
     if (help && !$('#rv2-resources')) {
       var resources = el('section', 'rv2-section'); resources.id = 'rv2-resources';
-      resources.innerHTML = '<div class="rv2-shell"><div class="rv2-head"><div><div class="rv2-kicker">Directorio administrable</div><h2>Recursos de apoyo</h2></div><p>Recursos adicionales publicados por administradores. La información debe verificarse antes de hacerse visible.</p></div><div id="rv2-resource-list" class="rv2-resource-grid"><div class="rv2-empty">Cargando recursos…</div></div></div>';
+      resources.innerHTML = '<div class="rv2-shell"><div class="rv2-head"><div><div class="rv2-kicker">Directorio administrable</div><h2>Recursos de apoyo</h2></div><p>Recursos adicionales publicados por administradores. La información debe verificarse antes de hacerse visible.</p></div><select id="rv2-resource-filter" class="rv2-input rv2-resource-filter" aria-label="Filtrar recursos por categoría"><option value="">Todas las categorías</option></select><div id="rv2-resource-list" class="rv2-resource-grid"><div class="rv2-empty">Cargando recursos…</div></div></div>';
       help.after(resources);
     }
     var footer = $('footer.footer');
@@ -212,7 +212,10 @@
         if (!confirm('¿Eliminar el contacto ' + contact.name + '?')) return;
         var deleted = await db.from('trusted_contacts').delete().eq('id', contact.id).eq('user_id', currentUser.id);
         if (deleted.error) alert(errText(deleted.error));
-        else { await loadContacts(); await logEvent('contact_deleted'); }
+        else {
+          await db.from('notifications').insert({ user_id: currentUser.id, title: 'Contacto eliminado', body: 'Se actualizó tu red de confianza.' });
+          await loadContacts(); await Promise.all([loadNotifications(), logEvent('contact_deleted')]);
+        }
       });
       actions.append(edit, remove); row.append(info, actions); host.append(row);
     });
@@ -232,7 +235,8 @@
     var result = await db.from('trusted_contacts').insert(record);
     if (result.error) return message(status, errText(result.error), 'error');
     form.reset(); message(status, 'Contacto guardado correctamente.', 'success');
-    await Promise.all([loadContacts(), logEvent('contact_created')]);
+    await db.from('notifications').insert({ user_id: currentUser.id, title: 'Contacto agregado', body: 'Se guardó un nuevo contacto en tu red de confianza.' });
+    await Promise.all([loadContacts(), loadNotifications(), logEvent('contact_created')]);
   }
 
   function buildNotificationCard() {
@@ -490,14 +494,33 @@
     var host = $('#rv2-resource-list'); if (!host || !db) return;
     var result = await db.from('support_resources').select('id,title,category,description,phone_label,phone_href,website_url')
       .eq('is_active', true).order('display_order', { ascending: true });
+    if (result.error) { host.replaceChildren(el('div', 'rv2-empty', 'No se pudieron cargar recursos: ' + errText(result.error))); return; }
+    cachedResources = result.data || [];
+    var filter = $('#rv2-resource-filter');
+    if (filter) {
+      var selected = filter.value;
+      filter.replaceChildren();
+      var all = document.createElement('option'); all.value = ''; all.textContent = 'Todas las categorías'; filter.append(all);
+      Array.from(new Set(cachedResources.map(function (item) { return item.category; }))).sort().forEach(function (category) {
+        var option = document.createElement('option'); option.value = category; option.textContent = category; filter.append(option);
+      });
+      filter.value = selected;
+      filter.onchange = renderResources;
+    }
+    renderResources();
+  }
+  function renderResources() {
+    var host = $('#rv2-resource-list'); if (!host) return;
+    var filter = $('#rv2-resource-filter');
+    var category = filter ? filter.value : '';
+    var items = cachedResources.filter(function (item) { return !category || item.category === category; });
     host.replaceChildren();
-    if (result.error) return host.append(el('div', 'rv2-empty', 'No se pudieron cargar recursos: ' + errText(result.error)));
-    if (!result.data || !result.data.length) return host.append(el('div', 'rv2-empty', 'No hay recursos adicionales publicados. Los canales principales están en la sección anterior.'));
-    result.data.forEach(function (item) {
+    if (!items.length) return host.append(el('div', 'rv2-empty', 'No hay recursos en esta categoría. Los canales principales están en la sección anterior.'));
+    items.forEach(function (item) {
       var card = el('article', 'rv2-resource');
       card.append(el('span', 'rv2-tag', item.category), el('h3', '', item.title), el('p', '', item.description));
-      if (item.phone_href) { var phone = el('a', '', item.phone_label || 'Llamar'); phone.href = item.phone_href; card.append(phone); }
-      if (item.website_url) { var web = el('a', '', 'Consultar sitio oficial ↗'); web.href = item.website_url; web.target = '_blank'; web.rel = 'noopener noreferrer'; card.append(web); }
+      if (item.phone_href) { var phone = el('a', '', item.phone_label || 'Llamar'); phone.href = item.phone_href; phone.addEventListener('click', function () { logEvent('resource_opened'); }); card.append(phone); }
+      if (item.website_url) { var web = el('a', '', 'Consultar sitio oficial ↗'); web.href = item.website_url; web.target = '_blank'; web.rel = 'noopener noreferrer'; web.addEventListener('click', function () { logEvent('resource_opened'); }); card.append(web); }
       host.append(card);
     });
   }
@@ -505,7 +528,7 @@
     var host = $('#rv2-public-reviews'), statsHost = $('#rv2-public-review-stats');
     if (!host || !statsHost || !db) return;
     var result = await db.from('reviews').select('id,rating,comment,evidence_path,created_at')
-      .eq('status', 'approved').eq('allow_public', true).order('created_at', { ascending: false }).limit(30);
+      .eq('status', 'approved').eq('allow_public', true).order('created_at', { ascending: false }).limit(1000);
     host.replaceChildren(); statsHost.replaceChildren();
     if (result.error) return host.append(el('div', 'rv2-empty', 'No se pudieron cargar opiniones: ' + errText(result.error)));
     var items = result.data || [], count = items.length;
@@ -514,7 +537,7 @@
       var box = el('div', 'rv2-stat'); box.append(el('strong', '', item[0]), el('span', '', item[1])); statsHost.append(box);
     });
     if (!count) return host.append(el('div', 'rv2-empty', 'Aún no hay opiniones aprobadas para publicación.'));
-    for (var i = 0; i < items.length; i++) {
+    for (var i = 0; i < Math.min(items.length, 30); i++) {
       var item = items[i], card = el('article', 'rv2-review-card');
       card.append(el('div', 'rv2-stars', '★'.repeat(item.rating) + '☆'.repeat(5-item.rating)),
         el('p', '', item.comment), el('small', '', 'Usuario de Red de Vida · ' + dateText(item.created_at)));
