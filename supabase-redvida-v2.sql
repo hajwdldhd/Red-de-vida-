@@ -82,6 +82,12 @@ create trigger redvida_auth_user_created
 after insert on auth.users
 for each row execute function public.redvida_handle_new_user();
 
+-- Backfill profiles for Supabase Auth accounts that existed before this migration.
+insert into public.profiles (id, display_name)
+select id, coalesce(nullif(raw_user_meta_data->>'display_name',''), split_part(coalesce(email,''),'@',1))
+from auth.users
+on conflict (id) do nothing;
+
 create table if not exists public.trusted_contacts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
