@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#173653" />
+  <meta name="theme-color" content="#7d1f2d" />
   <meta name="description" content="Red de Vida: prototipo académico para encontrar rutas de apoyo personal e institucional en Cali." />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -360,6 +360,7 @@
     @media(max-width:640px) { .notification-panel { padding:16px; } .notification-toolbar { align-items:flex-start; } .notification-actions { width:100%; } .notification-actions button { flex:1; } }
 
   </style>
+  <link rel="stylesheet" href="./redvida-v2.css" />
 </head>
 <body>
   <header class="site-header">
@@ -952,9 +953,11 @@
         });
       }
     })();
-<!-- Conexion con Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./database-config.js"></script>
-<script src="./database.js"></script>  </script>
+  </script>
+  <!-- Supabase y módulos de Red de Vida -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./database-config.js"></script>
+  <script src="./database.js"></script>
+  <script src="./redvida-v2.js"></script>
 </body>
 </html>
