@@ -72,7 +72,7 @@
     var footer = $('footer.footer');
     if (footer && !$('#rv2-reviews')) {
       var reviews = el('section', 'rv2-section'); reviews.id = 'rv2-reviews';
-      reviews.innerHTML = '<div class="rv2-shell"><div class="rv2-head"><div><div class="rv2-kicker">Experiencias reales</div><h2>Opiniones de la comunidad</h2></div><p>Las reseñas solo aparecen después de ser aprobadas y cuando su autor autoriza su publicación.</p></div><div id="rv2-public-review-stats" class="rv2-review-stats"></div><div id="rv2-public-reviews" class="rv2-review-grid"><div class="rv2-empty">Cargando opiniones aprobadas…</div></div><p class="rv2-note">No publiques documentos, conversaciones, números telefónicos ni información sensible en las evidencias.</p></div>';
+      reviews.innerHTML = '<div class="rv2-shell"><div class="rv2-head"><div><div class="rv2-kicker">Experiencias reales</div><h2>Opiniones de la comunidad</h2></div><p>Las reseñas solo aparecen después de ser aprobadas y cuando su autor autoriza su publicación.</p></div><div id="rv2-public-review-stats" class="rv2-review-stats"></div><div id="rv2-public-reviews" class="rv2-review-grid"><div class="rv2-empty">Cargando opiniones aprobadas…</div></div><div id="rv2-community-audio" class="rv2-audio-section" aria-live="polite"></div><p class="rv2-note">No publiques documentos, conversaciones, números telefónicos ni información sensible en las evidencias.</p></div>';
       footer.before(reviews);
     }
     var tech = $('#ficha-tecnica .shell');
@@ -524,6 +524,42 @@
       host.append(card);
     });
   }
+  async function loadCommunityAudio() {
+    var host = $('#rv2-community-audio');
+    if (!host) return;
+    var recordings = [
+      { name: 'Samuel', duration: '00:48', src: './audios/samuel.mp3' },
+      { name: 'Juanes', duration: '02:24', src: './audios/juanes.mp3' }
+    ];
+    var available = await Promise.all(recordings.map(async function (item) {
+      try {
+        var response = await fetch(item.src, { method: 'HEAD', cache: 'no-store' });
+        return response.ok ? item : null;
+      } catch (_) { return null; }
+    }));
+    available = available.filter(Boolean);
+    if (!available.length) return;
+    var heading = el('div', 'rv2-audio-heading');
+    heading.append(el('h3', '', 'Voces de la comunidad'),
+      el('p', '', 'Escucha los mensajes de voz compartidos para Red de Vida.'));
+    var grid = el('div', 'rv2-audio-grid');
+    available.forEach(function (item, index) {
+      var card = el('article', 'rv2-audio-card');
+      var top = el('div', 'rv2-audio-card-top');
+      top.append(el('span', 'rv2-tag', 'Audio ' + String(index + 1).padStart(2, '0')),
+        el('span', 'rv2-audio-duration', item.duration));
+      card.append(top, el('h4', '', 'Mensaje de ' + item.name));
+      var player = document.createElement('audio');
+      player.controls = true;
+      player.preload = 'none';
+      player.src = item.src;
+      player.setAttribute('aria-label', 'Reproducir mensaje de ' + item.name);
+      card.append(player);
+      grid.append(card);
+    });
+    host.replaceChildren(heading, grid);
+  }
+
   async function loadPublicReviews() {
     var host = $('#rv2-public-reviews'), statsHost = $('#rv2-public-review-stats');
     if (!host || !statsHost || !db) return;
@@ -554,6 +590,7 @@
 
   async function start() {
     injectSections();
+    loadCommunityAudio();
     if (!validConfig || !window.supabase || !window.supabase.createClient) {
       renderAuth();
       var resources = $('#rv2-resource-list'), reviews = $('#rv2-public-reviews');
