@@ -44,7 +44,7 @@ create or replace function public.redvida_protect_profile_role()
 returns trigger
 language plpgsql
 set search_path = public
-as $
+as $$
 begin
   if new.role is distinct from old.role
      and current_user not in ('postgres','supabase_admin','service_role')
