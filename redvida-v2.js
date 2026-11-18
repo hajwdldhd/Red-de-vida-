@@ -269,8 +269,9 @@
     var rateWrap = el('div'); rateWrap.append(el('label', 'rv2-label', 'Calificación'));
     var rating = document.createElement('select'); rating.className = 'rv2-input'; rating.name = 'rating'; rating.required = true;
     [['','Selecciona estrellas'],['5','★★★★★ · 5'],['4','★★★★☆ · 4'],['3','★★★☆☆ · 3'],['2','★★☆☆☆ · 2'],['1','★☆☆☆☆ · 1']].forEach(function (item) {
-      var option = document.createElement('option'); option.value = item[0]; option.textContent = item[1]; rateWrap.lastChild.append(option);
+      var option = document.createElement('option'); option.value = item[0]; option.textContent = item[1]; rating.append(option);
     });
+    rateWrap.append(rating);
     form.append(rateWrap);
     var commentWrap = el('div'); commentWrap.append(el('label', 'rv2-label', 'Comentario'));
     var comment = document.createElement('textarea'); comment.className = 'rv2-input rv2-textarea'; comment.name = 'comment';
@@ -351,10 +352,15 @@
       el('p', 'rv2-muted', 'Solo las cuentas con rol de administrador pueden aprobar reseñas y administrar recursos.'));
     var stats = el('div', 'rv2-admin-grid'); stats.id = 'rv2-admin-stats';
     stats.append(el('div', 'rv2-empty', 'Cargando estadísticas…'));
+    var users = el('div', 'rv2-list'); users.id = 'rv2-admin-users';
+    users.append(el('div', 'rv2-empty', 'Cargando usuarios…'));
     var pending = el('div', 'rv2-list'); pending.id = 'rv2-pending-reviews';
     pending.append(el('div', 'rv2-empty', 'Cargando reseñas pendientes…'));
+    var adminResources = el('div', 'rv2-list'); adminResources.id = 'rv2-admin-resources';
+    adminResources.append(el('div', 'rv2-empty', 'Cargando recursos…'));
     var resourceCard = buildAdminResourceForm();
-    card.append(stats, el('h3', '', 'Reseñas pendientes'), pending, resourceCard);
+    card.append(stats, el('h3', '', 'Usuarios registrados'), users, el('h3', '', 'Reseñas pendientes'), pending,
+      el('h3', '', 'Administrar recursos publicados'), adminResources, resourceCard);
     setTimeout(loadAdminData, 0); return card;
   }
   function buildAdminResourceForm() {
@@ -388,6 +394,19 @@
           statsHost.append(box);
         });
     }
+    var usersHost = $('#rv2-admin-users');
+    if (usersHost) {
+      var usersResult = await db.from('profiles').select('id,display_name,role,created_at').order('created_at', { ascending: false }).limit(100);
+      usersHost.replaceChildren();
+      if (usersResult.error) usersHost.append(el('p', 'rv2-message error', errText(usersResult.error)));
+      else if (!usersResult.data || !usersResult.data.length) usersHost.append(el('div', 'rv2-empty', 'No hay perfiles registrados.'));
+      else usersResult.data.forEach(function (profile) {
+        var row = el('div', 'rv2-list-item'), info = el('div');
+        info.append(el('strong', '', profile.display_name || 'Usuario'), el('small', '', 'Cuenta ' + profile.role + ' · ' + dateText(profile.created_at)));
+        row.append(info, el('span', 'rv2-tag', profile.role)); usersHost.append(row);
+      });
+    }
+    await loadManagedResources();
     var result = await db.from('reviews').select('id,user_id,rating,comment,evidence_path,allow_public,created_at')
       .eq('status', 'pending').order('created_at', { ascending: true }).limit(50);
     pendingHost.replaceChildren();
@@ -440,6 +459,31 @@
     if (result.error) return message(status, errText(result.error), 'error');
     form.reset(); message(status, 'Recurso publicado.', 'success');
     await Promise.all([loadResources(), loadAdminData()]);
+  }
+
+  async function loadManagedResources() {
+    var host = $('#rv2-admin-resources'); if (!host) return;
+    var result = await db.from('support_resources').select('id,title,category,is_active,created_at').order('created_at', { ascending: false });
+    host.replaceChildren();
+    if (result.error) return host.append(el('p', 'rv2-message error', errText(result.error)));
+    if (!result.data || !result.data.length) return host.append(el('div', 'rv2-empty', 'Todavía no hay recursos administrados.'));
+    result.data.forEach(function (item) {
+      var row = el('div', 'rv2-list-item'), info = el('div');
+      info.append(el('strong', '', item.title), el('small', '', item.category + ' · ' + (item.is_active ? 'Publicado' : 'Oculto')));
+      var actions = el('div', 'rv2-item-actions');
+      var toggle = el('button', 'rv2-mini-btn', item.is_active ? 'Ocultar' : 'Publicar');
+      toggle.addEventListener('click', async function () {
+        var changed = await db.from('support_resources').update({ is_active: !item.is_active }).eq('id', item.id);
+        if (changed.error) alert(errText(changed.error)); else { await loadManagedResources(); await loadResources(); }
+      });
+      var remove = el('button', 'rv2-mini-btn danger', 'Eliminar');
+      remove.addEventListener('click', async function () {
+        if (!confirm('¿Eliminar el recurso ' + item.title + '?')) return;
+        var deleted = await db.from('support_resources').delete().eq('id', item.id);
+        if (deleted.error) alert(errText(deleted.error)); else { await loadManagedResources(); await loadResources(); }
+      });
+      actions.append(toggle, remove); row.append(info, actions); host.append(row);
+    });
   }
 
   async function loadResources() {
