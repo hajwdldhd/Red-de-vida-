@@ -3,6 +3,11 @@
 
 create extension if not exists pgcrypto;
 
+-- Private helper schema. Keep it out of the Data API exposed schemas.
+create schema if not exists private;
+revoke all on schema private from public;
+grant usage on schema private to anon, authenticated;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null default '',
@@ -11,23 +16,24 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
-create or replace function public.redvida_is_admin()
+create or replace function private.redvida_is_admin()
 returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
-  );
+  select (select auth.uid()) is not null
+    and exists (
+      select 1 from public.profiles
+      where id = (select auth.uid()) and role = 'admin'
+    );
 $$;
 
-create or replace function public.redvida_touch_updated_at()
+create or replace function private.redvida_touch_updated_at()
 returns trigger
 language plpgsql
-set search_path = public
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -38,9 +44,9 @@ $$;
 drop trigger if exists profiles_touch_updated_at on public.profiles;
 create trigger profiles_touch_updated_at
 before update on public.profiles
-for each row execute function public.redvida_touch_updated_at();
+for each row execute function private.redvida_touch_updated_at();
 
-create or replace function public.redvida_protect_profile_role()
+create or replace function private.redvida_protect_profile_role()
 returns trigger
 language plpgsql
 set search_path = public
@@ -48,7 +54,7 @@ as $$
 begin
   if new.role is distinct from old.role
      and current_user not in ('postgres','supabase_admin','service_role')
-     and not public.redvida_is_admin() then
+     and not private.redvida_is_admin() then
     raise exception 'Only an administrator can change profile roles';
   end if;
   return new;
@@ -60,11 +66,11 @@ create trigger profiles_protect_role
 before update on public.profiles
 for each row execute function public.redvida_protect_profile_role();
 
-create or replace function public.redvida_handle_new_user()
+create or replace function private.redvida_handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 begin
   insert into public.profiles (id, display_name)
@@ -80,7 +86,7 @@ $$;
 drop trigger if exists redvida_auth_user_created on auth.users;
 create trigger redvida_auth_user_created
 after insert on auth.users
-for each row execute function public.redvida_handle_new_user();
+for each row execute function private.redvida_handle_new_user();
 
 -- Backfill profiles for Supabase Auth accounts that existed before this migration.
 insert into public.profiles (id, display_name)
@@ -169,56 +175,56 @@ alter table public.usage_events enable row level security;
 
 drop policy if exists "profiles read own or admin" on public.profiles;
 create policy "profiles read own or admin" on public.profiles
-for select to authenticated using (id = auth.uid() or public.redvida_is_admin());
+for select to authenticated using (id = auth.uid() or private.redvida_is_admin());
 drop policy if exists "profiles update own or admin" on public.profiles;
 create policy "profiles update own or admin" on public.profiles
-for update to authenticated using (id = auth.uid() or public.redvida_is_admin())
-with check (id = auth.uid() or public.redvida_is_admin());
+for update to authenticated using (id = auth.uid() or private.redvida_is_admin())
+with check (id = auth.uid() or private.redvida_is_admin());
 
 drop policy if exists "contacts select own or admin" on public.trusted_contacts;
 create policy "contacts select own or admin" on public.trusted_contacts
-for select to authenticated using (user_id = auth.uid() or public.redvida_is_admin());
+for select to authenticated using (user_id = auth.uid() or private.redvida_is_admin());
 drop policy if exists "contacts insert own" on public.trusted_contacts;
 create policy "contacts insert own" on public.trusted_contacts
 for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists "contacts update own or admin" on public.trusted_contacts;
 create policy "contacts update own or admin" on public.trusted_contacts
-for update to authenticated using (user_id = auth.uid() or public.redvida_is_admin())
-with check (user_id = auth.uid() or public.redvida_is_admin());
+for update to authenticated using (user_id = auth.uid() or private.redvida_is_admin())
+with check (user_id = auth.uid() or private.redvida_is_admin());
 drop policy if exists "contacts delete own or admin" on public.trusted_contacts;
 create policy "contacts delete own or admin" on public.trusted_contacts
-for delete to authenticated using (user_id = auth.uid() or public.redvida_is_admin());
+for delete to authenticated using (user_id = auth.uid() or private.redvida_is_admin());
 
 drop policy if exists "notifications select own or admin" on public.notifications;
 create policy "notifications select own or admin" on public.notifications
-for select to authenticated using (user_id = auth.uid() or public.redvida_is_admin());
+for select to authenticated using (user_id = auth.uid() or private.redvida_is_admin());
 drop policy if exists "notifications update own or admin" on public.notifications;
 create policy "notifications update own or admin" on public.notifications
-for update to authenticated using (user_id = auth.uid() or public.redvida_is_admin())
-with check (user_id = auth.uid() or public.redvida_is_admin());
+for update to authenticated using (user_id = auth.uid() or private.redvida_is_admin())
+with check (user_id = auth.uid() or private.redvida_is_admin());
 drop policy if exists "notifications insert own or admin" on public.notifications;
 create policy "notifications insert own or admin" on public.notifications
-for insert to authenticated with check (user_id = auth.uid() or public.redvida_is_admin());
+for insert to authenticated with check (user_id = auth.uid() or private.redvida_is_admin());
 
 drop policy if exists "support resources public active" on public.support_resources;
 create policy "support resources public active" on public.support_resources
-for select to anon, authenticated using (is_active or public.redvida_is_admin());
+for select to anon, authenticated using (is_active or private.redvida_is_admin());
 drop policy if exists "support resources admin insert" on public.support_resources;
 create policy "support resources admin insert" on public.support_resources
-for insert to authenticated with check (public.redvida_is_admin());
+for insert to authenticated with check (private.redvida_is_admin());
 drop policy if exists "support resources admin update" on public.support_resources;
 create policy "support resources admin update" on public.support_resources
-for update to authenticated using (public.redvida_is_admin()) with check (public.redvida_is_admin());
+for update to authenticated using (private.redvida_is_admin()) with check (private.redvida_is_admin());
 drop policy if exists "support resources admin delete" on public.support_resources;
 create policy "support resources admin delete" on public.support_resources
-for delete to authenticated using (public.redvida_is_admin());
+for delete to authenticated using (private.redvida_is_admin());
 
 drop policy if exists "reviews public approved or owner or admin" on public.reviews;
 create policy "reviews public approved or owner or admin" on public.reviews
 for select to anon, authenticated using (
   (status = 'approved' and allow_public = true)
   or user_id = auth.uid()
-  or public.redvida_is_admin()
+  or private.redvida_is_admin()
 );
 drop policy if exists "reviews owner insert pending" on public.reviews;
 create policy "reviews owner insert pending" on public.reviews
@@ -227,18 +233,18 @@ for insert to authenticated with check (
 );
 drop policy if exists "reviews admin update" on public.reviews;
 create policy "reviews admin update" on public.reviews
-for update to authenticated using (public.redvida_is_admin())
-with check (public.redvida_is_admin());
+for update to authenticated using (private.redvida_is_admin())
+with check (private.redvida_is_admin());
 drop policy if exists "reviews owner delete pending or admin" on public.reviews;
 create policy "reviews owner delete pending or admin" on public.reviews
-for delete to authenticated using ((user_id = auth.uid() and status = 'pending') or public.redvida_is_admin());
+for delete to authenticated using ((user_id = auth.uid() and status = 'pending') or private.redvida_is_admin());
 
 drop policy if exists "usage events insert own" on public.usage_events;
 create policy "usage events insert own" on public.usage_events
 for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists "usage events admin read" on public.usage_events;
 create policy "usage events admin read" on public.usage_events
-for select to authenticated using (public.redvida_is_admin());
+for select to authenticated using (private.redvida_is_admin());
 
 -- Private evidence bucket. An image is only readable by its owner/admin, or
 -- by anyone after its associated review is approved and public sharing is allowed.
@@ -259,7 +265,7 @@ for select to anon, authenticated using (
   bucket_id = 'redvida-evidence'
   and (
     (auth.uid() is not null and (storage.foldername(name))[1] = auth.uid()::text)
-    or public.redvida_is_admin()
+    or private.redvida_is_admin()
     or exists (
       select 1 from public.reviews r
       where r.evidence_path = name and r.status = 'approved' and r.allow_public = true
@@ -270,20 +276,20 @@ drop policy if exists "evidence owner delete" on storage.objects;
 create policy "evidence owner delete" on storage.objects
 for delete to authenticated using (
   bucket_id = 'redvida-evidence'
-  and ((storage.foldername(name))[1] = auth.uid()::text or public.redvida_is_admin())
+  and ((storage.foldername(name))[1] = auth.uid()::text or private.redvida_is_admin())
 );
 
 create or replace function public.redvida_admin_stats()
 returns jsonb
 language plpgsql
 stable
-security definer
-set search_path = public
+security invoker
+set search_path = ''
 as $$
 declare
   payload jsonb;
 begin
-  if not public.redvida_is_admin() then
+  if not private.redvida_is_admin() then
     raise exception 'Administrator permission required';
   end if;
   select jsonb_build_object(
@@ -299,8 +305,13 @@ begin
 end;
 $$;
 
-revoke all on function public.redvida_admin_stats() from public;
+revoke all on function public.redvida_admin_stats() from public, anon;
 grant execute on function public.redvida_admin_stats() to authenticated;
+revoke all on function private.redvida_is_admin() from public;
+grant execute on function private.redvida_is_admin() to anon, authenticated;
+revoke all on function private.redvida_touch_updated_at() from public, anon, authenticated;
+revoke all on function private.redvida_protect_profile_role() from public, anon, authenticated;
+revoke all on function private.redvida_handle_new_user() from public, anon, authenticated;
 
 grant usage on schema public to anon, authenticated;
 grant select on public.support_resources to anon, authenticated;
