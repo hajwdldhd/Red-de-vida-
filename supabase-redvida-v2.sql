@@ -64,7 +64,7 @@ $$;
 drop trigger if exists profiles_protect_role on public.profiles;
 create trigger profiles_protect_role
 before update on public.profiles
-for each row execute function public.redvida_protect_profile_role();
+for each row execute function private.redvida_protect_profile_role();
 
 create or replace function private.redvida_handle_new_user()
 returns trigger
@@ -106,7 +106,7 @@ create table if not exists public.trusted_contacts (
 create index if not exists trusted_contacts_user_idx on public.trusted_contacts(user_id, created_at desc);
 drop trigger if exists trusted_contacts_touch_updated_at on public.trusted_contacts;
 create trigger trusted_contacts_touch_updated_at before update on public.trusted_contacts
-for each row execute function public.redvida_touch_updated_at();
+for each row execute function private.redvida_touch_updated_at();
 
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
@@ -138,7 +138,7 @@ create index if not exists support_resources_active_idx on public.support_resour
 
 drop trigger if exists support_resources_touch_updated_at on public.support_resources;
 create trigger support_resources_touch_updated_at before update on public.support_resources
-for each row execute function public.redvida_touch_updated_at();
+for each row execute function private.redvida_touch_updated_at();
 
 create table if not exists public.reviews (
   id uuid primary key default gen_random_uuid(),
@@ -322,3 +322,7 @@ grant select on public.reviews to anon, authenticated;
 grant insert, update, delete on public.reviews to authenticated;
 grant select, insert on public.usage_events to authenticated;
 grant select, update on public.profiles to authenticated;
+
+
+-- Refresh the PostgREST schema cache after creating the Data API tables.
+notify pgrst, 'reload schema';
