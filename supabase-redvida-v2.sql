@@ -43,12 +43,11 @@ for each row execute function public.redvida_touch_updated_at();
 create or replace function public.redvida_protect_profile_role()
 returns trigger
 language plpgsql
-security definer
 set search_path = public
-as $$
+as $
 begin
   if new.role is distinct from old.role
-     and coalesce(auth.role(), '') <> 'service_role'
+     and current_user not in ('postgres','supabase_admin','service_role')
      and not public.redvida_is_admin() then
     raise exception 'Only an administrator can change profile roles';
   end if;
@@ -302,6 +301,7 @@ grant select on public.support_resources to anon, authenticated;
 grant select, insert, update, delete on public.trusted_contacts to authenticated;
 grant select, insert, update on public.notifications to authenticated;
 grant select, insert, update, delete on public.support_resources to authenticated;
-grant select, insert, update, delete on public.reviews to authenticated;
+grant select on public.reviews to anon, authenticated;
+grant insert, update, delete on public.reviews to authenticated;
 grant select, insert on public.usage_events to authenticated;
 grant select, update on public.profiles to authenticated;
