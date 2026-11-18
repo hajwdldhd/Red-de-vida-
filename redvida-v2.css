@@ -151,3 +151,16 @@ a{ text-underline-offset:3px }
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+/* Community voice notes */
+.rv2-audio-section{margin-top:28px}
+.rv2-audio-heading{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:12px}
+.rv2-audio-heading h3{margin:0;color:var(--navy);font-size:19px}
+.rv2-audio-heading p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+.rv2-audio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.rv2-audio-card{min-width:0;border:1px solid var(--line);border-radius:15px;padding:15px;background:#fff}
+.rv2-audio-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.rv2-audio-duration{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.rv2-audio-card h4{color:var(--navy);font-size:15px;margin:0 0 12px}
+.rv2-audio-card audio{display:block;width:100%;max-width:100%;height:42px}
+@media(max-width:580px){.rv2-audio-heading{display:block}.rv2-audio-heading p{margin-top:5px}.rv2-audio-grid{grid-template-columns:1fr}}
